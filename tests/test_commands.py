@@ -122,10 +122,12 @@ def test_relocate_updates_path_and_size(tmp_path, monkeypatch):
     assert st.cfg.find("m").model_path == str(new)
 
 
-def test_set_option_unknown_key(tmp_path, monkeypatch):
+def test_no_login_option_is_offered(tmp_path, monkeypatch):
+    """Starting at login belongs to the rack. A second switch here could only
+    contradict it."""
     cmd = S.Commands(_state(tmp_path, monkeypatch))
-    r = run(cmd.run("set_option", {"key": "nope", "value": True}))
-    assert r["ok"] is False
+    assert run(cmd.run("set_option", {"key": "start_rack_at_login"}))["ok"] is False
+    assert "start_rack_at_login" not in cmd.snapshot()
 
 
 def test_status_text_reflects_state(tmp_path, monkeypatch):

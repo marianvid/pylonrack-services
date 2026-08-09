@@ -27,12 +27,11 @@ rather than a header. Add as many as the machine has memory for.
   because a column repeating the same value on every row says nothing
 - **Per-instance logs** — merged, or filtered to one model, with pause and
   clear; several servers writing at once are unreadable as a single stream
-- **Start PylonRack at login**, so the node is up without anyone opening
-  anything
 
 It does *not* download models, browse Hugging Face, or rebuild llama.cpp —
 `pylonrack-llama` already does all three, and duplicating them would mean two
-places to fix the same bug.
+places to fix the same bug. Starting at login belongs to PylonRack for the
+same reason.
 
 ---
 

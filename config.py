@@ -67,8 +67,6 @@ class AppConfig:
     hf_cache: str = "~/.cache/huggingface/hub"
     log_dir: str = "~/.pylonrack/services"
     ui_port: int = 8768
-    start_rack_at_login: bool = False
-    load_slot_automatically: bool = True
     instances: list = field(default_factory=list)
 
     # ── resolved paths ────────────────────────────────────────────────
@@ -120,8 +118,6 @@ def load() -> AppConfig:
         hf_cache=raw.get("hf_cache", AppConfig.hf_cache),
         log_dir=raw.get("log_dir", AppConfig.log_dir),
         ui_port=raw.get("ui_port", AppConfig.ui_port),
-        start_rack_at_login=raw.get("start_rack_at_login", False),
-        load_slot_automatically=raw.get("load_slot_automatically", True),
     )
     cfg.instances = [Instance.from_dict(d) for d in raw.get("instances", [])]
     return cfg
@@ -134,8 +130,6 @@ def save(cfg: AppConfig) -> None:
         "hf_cache": cfg.hf_cache,
         "log_dir": cfg.log_dir,
         "ui_port": cfg.ui_port,
-        "start_rack_at_login": cfg.start_rack_at_login,
-        "load_slot_automatically": cfg.load_slot_automatically,
         "instances": [i.to_dict() for i in cfg.instances],
     }
     SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)

@@ -136,24 +136,6 @@
   .hint{color:var(--dim);font-size:11.5px}
   .grow{flex:1}
 
-  .sys{border-top:1px solid var(--line);padding:13px 16px;background:var(--panel)}
-  .sys h3{margin:0 0 3px;font-size:12px;font-weight:650}
-  .sys>p{margin:0 0 11px;color:var(--muted);font-size:11.5px;max-width:64ch}
-  .opt{display:flex;align-items:center;gap:12px;padding:8px 0;
-    border-top:1px solid var(--line-soft)}
-  .opt:first-of-type{border-top:none}
-  .opt .txt{flex:1}
-  .opt .txt b{font-weight:600;display:block}
-  .opt .txt span{color:var(--muted);font-size:11.5px}
-  .toggle{width:38px;height:22px;border-radius:12px;background:var(--sunk);
-    border:1px solid var(--line);position:relative;cursor:pointer;flex:none;
-    transition:background .16s,border-color .16s}
-  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;
-    border-radius:50%;background:var(--dim);transition:transform .16s,background .16s}
-  .toggle[aria-checked="true"]{background:var(--brass-wash);border-color:var(--brass)}
-  .toggle[aria-checked="true"]::after{transform:translateX(16px);background:var(--brass)}
-  .toggle:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
-
   dialog{border:1px solid var(--line);border-radius:11px;background:var(--panel);
     color:var(--text);padding:0;box-shadow:var(--shadow);max-width:680px;width:94vw}
   dialog::backdrop{background:rgba(10,13,18,.5)}
@@ -231,22 +213,6 @@
   <span class="hint" id="foothint"></span>
 </div>
 
-<div class="sys">
-  <h3>Launch</h3>
-  <p>The inference node has to be reachable from the home lab without anyone
-     opening anything. Instance state is saved — whatever was running comes back
-     after a restart.</p>
-  <div class="opt">
-    <div class="txt"><b>Start PylonRack at login</b>
-      <span>Appears in the menu bar when the Mac boots</span></div>
-    <div class="toggle" role="switch" tabindex="0" id="optLogin"></div>
-  </div>
-  <div class="opt">
-    <div class="txt"><b>Load the <code style="font-family:var(--mono);color:var(--brass)">services</code> slot automatically</b>
-      <span>Comes up with PylonRack, no click needed</span></div>
-    <div class="toggle" role="switch" tabindex="0" id="optSlot"></div>
-  </div>
-</div>
 </div><!-- /viewInst -->
 
 <div class="view" id="viewLog">
@@ -523,20 +489,6 @@ $("#missRemove").onclick = async () => {
   await send("remove", {id:missing});
   $("#missDlg").close();
 };
-
-/* ── toggles ── */
-function wireToggle(el, key){
-  const flip = async () => {
-    const next = el.getAttribute("aria-checked") !== "true";
-    el.setAttribute("aria-checked", next);
-    const r = await send("set_option", {key, value:next});
-    if (!r.ok) { el.setAttribute("aria-checked", !next); banner(r.error || "could not change"); }
-  };
-  el.onclick = flip;
-  el.onkeydown = e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); flip(); } };
-}
-wireToggle($("#optLogin"), "start_rack_at_login");
-wireToggle($("#optSlot"),  "load_slot_automatically");
 
 /* ── views ── */
 let view = "inst";

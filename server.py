@@ -3,6 +3,9 @@
 Runs several llama-server instances side by side and turns the Mac into an
 inference node the home lab can reach.
 
+Starting at login is not handled here: PylonRack already does it, and two
+switches for one behaviour can only disagree.
+
 Two channels:
   * ws://127.0.0.1:8766  — the rack protocol (header controls, status, log)
   * http://127.0.0.1:8768 — the slot's own body panel, shown in the WebView
@@ -29,7 +32,6 @@ from pathlib import Path
 import websockets
 
 import config as cfg_module
-import launch_agent
 from instances import InstanceManager, RUNNING, STARTING, MISSING
 from model_scanner import scan
 from parent_watchdog import watch_parent
@@ -163,8 +165,6 @@ class Commands:
         snap["llama_bin"] = str(self.st.cfg.bin_path)
         snap["llama_bin_ok"] = self.st.cfg.bin_path.exists()
         snap["hf_cache"] = str(self.st.cfg.hf_cache_path)
-        snap["start_rack_at_login"] = launch_agent.is_enabled()
-        snap["load_slot_automatically"] = self.st.cfg.load_slot_automatically
         return snap
 
     # ── actions ───────────────────────────────────────────────────────
@@ -230,21 +230,6 @@ class Commands:
             inst.size_gb = round(Path(path).stat().st_size / (1024 ** 3), 1)
             st.mgr.sync()
             st.save()
-            await self.broadcast()
-            return {"ok": True}
-
-        if action == "set_option":
-            key, val = p.get("key"), bool(p.get("value"))
-            if key == "start_rack_at_login":
-                ok, err = launch_agent.set_enabled(val)
-                if not ok:
-                    return {"ok": False, "error": err}
-                st.cfg.start_rack_at_login = val
-            elif key == "load_slot_automatically":
-                st.cfg.load_slot_automatically = val
-            else:
-                return {"ok": False, "error": f"unknown option {key}"}
-            cfg_module.save(st.cfg)
             await self.broadcast()
             return {"ok": True}
 

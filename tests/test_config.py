@@ -8,6 +8,7 @@ def test_defaults_when_no_file(tmp_path, monkeypatch):
     cfg = C.load()
     assert cfg.instances == []
     assert cfg.ui_port == 8768
+    assert not hasattr(cfg, "start_rack_at_login")
 
 
 def test_round_trip(tmp_path, monkeypatch):
