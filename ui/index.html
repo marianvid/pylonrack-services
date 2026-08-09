@@ -318,8 +318,6 @@ function render(s){
   $("#foothint").textContent = s.llama_bin_ok
     ? `Start is blocked when the total would exceed ${s.budget_gb} GB`
     : `llama-server not found at ${s.llama_bin}`;
-  $("#optLogin").setAttribute("aria-checked", !!s.start_rack_at_login);
-  $("#optSlot").setAttribute("aria-checked", !!s.load_slot_automatically);
 
   const rows = s.instances || [];
   $("#empty").hidden = rows.length > 0;

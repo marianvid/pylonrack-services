@@ -168,7 +168,6 @@ Two ways to tighten it:
 ```
 config.py        settings.json ↔ dataclasses, atomic writes, port allocation
 instances.py     the process manager: spawn, readiness, memory guard, states
-launch_agent.py  the login item for PylonRack
 uiserver.py      HTTP + WebSocket for the body panel
 server.py        the rack protocol and the shared command layer
 ui/index.html    the body panel itself
