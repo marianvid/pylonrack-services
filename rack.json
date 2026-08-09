@@ -3,7 +3,7 @@
   "version": "1.0",
   "start": "zsh start.sh",
   "startup_delay": 3,
-  "port": 8767,
+  "port": 8766,
   "heartbeat_interval": 5,
   "modes": ["instances", "log"],
   "ui_url": "http://127.0.0.1:8768/",

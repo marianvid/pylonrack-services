@@ -4,7 +4,7 @@ Runs several llama-server instances side by side and turns the Mac into an
 inference node the home lab can reach.
 
 Two channels:
-  * ws://127.0.0.1:8767  — the rack protocol (header controls, status, log)
+  * ws://127.0.0.1:8766  — the rack protocol (header controls, status, log)
   * http://127.0.0.1:8768 — the slot's own body panel, shown in the WebView
 
 Header controls (declared here, rendered natively by the rack):
@@ -450,7 +450,7 @@ async def main() -> None:
 
     rack_json = Path(__file__).parent / "rack.json"
     manifest = json.loads(rack_json.read_text(encoding="utf-8"))
-    port = int(os.environ.get("PYLON_PORT", manifest.get("port", 8767)))
+    port = int(os.environ.get("PYLON_PORT", manifest.get("port", 8766)))
 
     st = AppState()
     cmd = Commands(st)

@@ -20,7 +20,7 @@ from pathlib import Path
 
 SETTINGS_FILE = Path(__file__).parent / "settings.json"
 
-# 8767 is the rack channel and 8768 the UI server, so instances start above.
+# 8766 is the rack channel and 8768 the UI server, so instances start above.
 PORT_RANGE_START = 8771
 PORT_RANGE_END = 8829
 

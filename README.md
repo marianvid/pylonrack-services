@@ -92,11 +92,12 @@ open http://127.0.0.1:8768/
 
 | Port | What |
 |---|---|
-| **8767** | the rack channel — PylonRack talks to the slot here |
+| **8766** | the rack channel — PylonRack talks to the slot here |
 | **8768** | the body panel: HTML over HTTP, live state over WebSocket |
 | **8771–8829** | one per instance, assigned automatically |
 
-`8765` belongs to `pylonrack-llama`, so both slots can be loaded at once.
+`8765` belongs to `pylonrack-llama` and `8767` to `pylonrack-calibrate`, so
+all of them can be loaded at once.
 Change `port` in `rack.json` and `ui_port` in `settings.json` if either clashes
 with something else on your machine.
 
