@@ -345,16 +345,13 @@ class InstanceManager:
         rows = []
         for m in self.all():
             i = m.inst
-            rows.append({
-                "id": i.id,
-                "name": i.name,
-                "model_path": i.model_path,
-                "host": i.host,
-                "port": i.port,
-                "ctx_size": i.ctx_size,
-                "parallel": i.parallel,
-                "size_gb": i.size_gb,
-                "extra_args": i.extra_args,
+            # The whole configuration goes out, not just the columns shown in
+            # the table. The edit dialog is built from this; when it carried
+            # only the visible fields the rest arrived empty and the dropdowns
+            # fell back to their first option, so saving quietly rewrote
+            # settings the user never touched.
+            row = dict(i.to_dict())
+            row.update({
                 "state": m.state,
                 "detail": m.detail,
                 "pid": m.pid,
@@ -363,6 +360,7 @@ class InstanceManager:
                 "requests": m.requests_active(),
                 "url": f"http://{_display_host(i.host)}:{i.port}",
             })
+            rows.append(row)
         return {
             "instances": rows,
             "running": sum(1 for r in rows if r["state"] == RUNNING),

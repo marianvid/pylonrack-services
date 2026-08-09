@@ -403,33 +403,36 @@ function openEdit(id){
   $("#edName").textContent = r.name;
   $("#edMeta").textContent = `${r.size_gb.toFixed(1)} GB · ${r.model_path.split("/").pop()}`;
   $("#edErr").textContent = "";
-  // The row carries only display fields; ask for the full record.
-  send("snapshot").then(() => {});
+  // The row is the whole record, so the dialog is built straight from it.
+  // A field the server does not send is shown disabled rather than blank:
+  // an empty box that saves as a real value is how settings get clobbered.
   $("#edFields").innerHTML = FLD.map(([k, label, kind, key]) => {
     if (k === "grp") return `<div class="grp">${label}</div>`;
-    const v = r[k] !== undefined ? r[k] : (FULL[id] ? FULL[id][k] : "");
+    const v = r[k];
+    const missing = v === undefined;
     if (kind === "bool")
-      return `<div class="f"><label>${label}</label><select name="${k}">
-        <option value="1">on</option><option value="0">off</option></select></div>`;
-    return `<div class="f ${key?"key":""}"><label>${label}</label>
-      <input name="${k}" value="${esc(v ?? "")}"></div>`;
+      return `<div class="f"><label>${label}</label>
+        <select name="${k}" ${missing ? "disabled" : ""}>
+          <option value="1" ${v === true ? "selected" : ""}>on</option>
+          <option value="0" ${v === false ? "selected" : ""}>off</option>
+        </select></div>`;
+    return `<div class="f ${key ? "key" : ""}"><label>${label}</label>
+      <input name="${k}" value="${esc(missing ? "" : v)}"
+        ${missing ? "disabled" : ""}></div>`;
   }).join("");
-  // populate from the authoritative record
-  const full = FULL[id] || r;
-  $("#edFields").querySelectorAll("[name]").forEach(el => {
-    const v = full[el.name];
-    if (v === undefined) return;
-    if (el.tagName === "SELECT") el.value = v ? "1" : "0";
-    else el.value = v;
-  });
   $("#editDlg").showModal();
 }
 $("#edSave").onclick = async () => {
   const fields = {};
   $("#edFields").querySelectorAll("[name]").forEach(el => {
+    if (el.disabled) return;                       // never send what we could not show
     let v = el.value;
     if (el.tagName === "SELECT") v = el.value === "1";
-    else if (NUM.includes(el.name)) v = Number(v);
+    else if (NUM.includes(el.name)) {
+      if (v.trim() === "") return;                 // blank is not zero
+      v = Number(v);
+      if (!Number.isFinite(v)) return;
+    }
     fields[el.name] = v;
   });
   const r = await send("update", {id:editing, fields});
@@ -437,13 +440,6 @@ $("#edSave").onclick = async () => {
   if (r.message) banner(r.message);
   $("#editDlg").close();
 };
-
-/* Full records, kept beside the display rows so the dialog can show every
-   parameter without widening the table. */
-let FULL = {};
-const origRender = render;
-render = s => { origRender(s); (s.instances||[]).forEach(r => {
-  FULL[r.id] = Object.assign(FULL[r.id]||{}, r); }); };
 
 /* ── add ── */
 $("#addBtn").onclick = async () => {

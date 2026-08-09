@@ -108,6 +108,16 @@ def test_sync_drops_removed_instances(tmp_path):
     assert [m.inst.id for m in mgr.all()] == ["a"]
 
 
+def test_snapshot_carries_every_editable_field(tmp_path):
+    """The edit dialog is built from the snapshot row. If a field is missing
+    the box shows up blank and a dropdown falls back to its first option, so
+    saving rewrites settings nobody touched."""
+    mgr = I.InstanceManager(_cfg(tmp_path, _inst(tmp_path)))
+    row = mgr.snapshot()["instances"][0]
+    for field in C.Instance.__dataclass_fields__:
+        assert field in row, f"snapshot is missing {field}"
+
+
 def test_snapshot_shape(tmp_path):
     mgr = I.InstanceManager(_cfg(tmp_path, _inst(tmp_path)))
     s = mgr.snapshot()
