@@ -37,6 +37,7 @@ LOG_BACKUPS = 5
 READY_TIMEOUT = 300          # a 20 GB model on a cold cache is genuinely slow
 READY_POLL = 1.0
 MEM_HEADROOM_GB = 8.0        # never plan to fill RAM to the brim
+METRIC_INTERVAL = 3.0        # how often the poller refreshes RSS and requests
 
 # Instance states. `missing` is deliberately not `error`.
 IDLE = "idle"
@@ -58,6 +59,11 @@ class ManagedInstance:
         self._detail: str = ""
         self._started_at: float = 0.0
         self._lock = threading.Lock()
+        # Refreshed by the manager's poller thread. snapshot() is built on the
+        # event loop and must never do I/O of its own: an unresponsive server
+        # would otherwise stall everything for the length of its timeout.
+        self._rss_gb: float = 0.0
+        self._requests: int = 0
 
     # ── state ─────────────────────────────────────────────────────────
     @property
@@ -91,27 +97,34 @@ class ManagedInstance:
         return int(time.time() - self._started_at) if self.pid else 0
 
     def rss_gb(self) -> float:
-        pid = self.pid
-        if not pid:
-            return 0.0
-        try:
-            return round(psutil.Process(pid).memory_info().rss / (1024 ** 3), 1)
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            return 0.0
+        """Last measured resident memory. Cheap — reads the cache."""
+        return self._rss_gb if self.pid else 0.0
 
     def requests_active(self) -> int:
-        if self.state != RUNNING:
-            return 0
+        """Last measured in-flight requests. Cheap — reads the cache."""
+        return self._requests if self.state == RUNNING else 0
+
+    def refresh_metrics(self) -> None:
+        """Measure for real. Called only from the poller thread, never from
+        the event loop: this does a network round trip."""
+        pid = self.pid
+        if not pid:
+            self._rss_gb, self._requests = 0.0, 0
+            return
+        try:
+            self._rss_gb = round(
+                psutil.Process(pid).memory_info().rss / (1024 ** 3), 1)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            self._rss_gb = 0.0
         try:
             r = requests.get(
                 f"http://127.0.0.1:{self.inst.port}/metrics", timeout=1.5)
             r.raise_for_status()
-            for line in r.text.splitlines():
-                if line.startswith("llamacpp:requests_processing "):
-                    return int(float(line.split()[1]))
+            self._requests = next(
+                (int(float(l.split()[1])) for l in r.text.splitlines()
+                 if l.startswith("llamacpp:requests_processing ")), 0)
         except Exception:
-            pass
-        return 0
+            self._requests = 0
 
     # ── lifecycle ─────────────────────────────────────────────────────
     def build_command(self) -> list[str]:
@@ -151,6 +164,10 @@ class ManagedInstance:
         with self._lock:
             if self.state == RUNNING:
                 return True, "already running"
+            if self.state in (STARTING, STOPPING):
+                # Two starts in flight would spawn two servers on one port; the
+                # second dies with an error nobody reads.
+                return False, f"already {self.state}"
             if not Path(self.inst.model_path).exists():
                 self._state = MISSING
                 self._detail = "model file not found"
@@ -166,15 +183,19 @@ class ManagedInstance:
         log_path = self.cfg.log_file_for(self.inst.id)
         _rotate(log_path)
         try:
-            fh = open(log_path, "a", buffering=1, encoding="utf-8",
-                      errors="replace")
-            fh.write(f"\n=== start {time.strftime('%Y-%m-%d %H:%M:%S')} "
-                     f"port {self.inst.port} ===\n")
-            self._proc = subprocess.Popen(
-                self.build_command(),
-                stdout=fh, stderr=subprocess.STDOUT,
-                start_new_session=True,   # survives a rack crash; watchdog cleans up
-            )
+            # The child gets its own duplicate of the descriptor, so the parent
+            # closes its copy immediately. Leaving it open leaked one file
+            # handle per start, which only shows up after a few hundred.
+            with open(log_path, "a", buffering=1, encoding="utf-8",
+                      errors="replace") as fh:
+                fh.write(f"\n=== start {time.strftime('%Y-%m-%d %H:%M:%S')} "
+                         f"port {self.inst.port} ===\n")
+                self._proc = subprocess.Popen(
+                    self.build_command(),
+                    stdout=fh, stderr=subprocess.STDOUT,
+                    start_new_session=True,   # outlives a rack crash; the
+                                              # watchdog cleans up after it
+                )
         except Exception as exc:
             self._state = ERROR
             self._detail = str(exc)
@@ -252,6 +273,22 @@ class InstanceManager:
         self.cfg = cfg
         self._managed: dict = {}
         self.sync()
+        self._stop_poll = threading.Event()
+        self._poller = threading.Thread(target=self._poll_loop, daemon=True,
+                                        name="metrics")
+        self._poller.start()
+
+    def _poll_loop(self) -> None:
+        """Measure RSS and in-flight requests off the event loop."""
+        while not self._stop_poll.wait(METRIC_INTERVAL):
+            for m in list(self._managed.values()):
+                try:
+                    m.refresh_metrics()
+                except Exception:
+                    log.debug("metrics refresh failed for %s", m.inst.id)
+
+    def close(self) -> None:
+        self._stop_poll.set()
 
     def sync(self) -> None:
         """Reconcile the managed set with the config, keeping live processes."""
@@ -285,6 +322,8 @@ class InstanceManager:
                          if m.state in (RUNNING, STARTING)), 1)
 
     def used_gb(self) -> float:
+        """Measured memory of everything up. Reads the cache, so it lags by at
+        most one poll interval — the committed figure is what the guard uses."""
         return round(sum(m.rss_gb() for m in self.all()), 1)
 
     def can_start(self, inst_id: str) -> tuple[bool, str]:
@@ -379,18 +418,25 @@ def _display_host(host: str) -> str:
     return lan_ip() if host in ("0.0.0.0", "::") else host
 
 
+_LAN_IP: str | None = None
+
+
 def lan_ip() -> str:
-    """Best-effort local address. No packet is actually sent."""
+    """Best-effort local address, resolved once. No packet is actually sent."""
+    global _LAN_IP
+    if _LAN_IP is not None:
+        return _LAN_IP
     import socket
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect(("192.168.1.1", 1))
-            return s.getsockname()[0]
+            _LAN_IP = s.getsockname()[0]
         finally:
             s.close()
     except Exception:
-        return "127.0.0.1"
+        _LAN_IP = "127.0.0.1"
+    return _LAN_IP
 
 
 def _port_busy(port: int) -> bool:
@@ -401,13 +447,15 @@ def _port_busy(port: int) -> bool:
 
 
 def _rotate(path: Path) -> None:
+    """foo.log -> foo.log.1 -> foo.log.2 ... The suffix is appended rather
+    than replaced, so the rotated files stay recognisable as logs."""
     try:
         if path.exists() and path.stat().st_size > LOG_MAX_BYTES:
             for n in range(LOG_BACKUPS - 1, 0, -1):
-                older, newer = path.with_suffix(f".{n}"), path.with_suffix(f".{n+1}")
+                older = Path(f"{path}.{n}")
                 if older.exists():
-                    shutil.move(str(older), str(newer))
-            shutil.move(str(path), str(path.with_suffix(".1")))
+                    shutil.move(str(older), f"{path}.{n + 1}")
+            shutil.move(str(path), f"{path}.1")
     except Exception as exc:
         log.debug("log rotation failed for %s: %s", path, exc)
 

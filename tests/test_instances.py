@@ -51,6 +51,26 @@ def test_memory_guard_allows_small(tmp_path):
     assert ok is True
 
 
+def test_busy_port_blocks_start(tmp_path, monkeypatch):
+    """The probe the other tests switch off, tested on its own."""
+    monkeypatch.setattr(I, "_port_busy", lambda port: True)
+    mgr = I.InstanceManager(_cfg(tmp_path, _inst(tmp_path)))
+    ok, why = mgr.can_start("m")
+    assert ok is False and "in use" in why
+
+
+def test_metrics_are_read_from_cache_not_the_network(tmp_path, monkeypatch):
+    """snapshot() runs on the event loop. If it reached for /metrics, an
+    unresponsive server would stall everything for the length of its timeout."""
+    def boom(*a, **k):
+        raise AssertionError("snapshot must not touch the network")
+    monkeypatch.setattr(I.requests, "get", boom)
+    mgr = I.InstanceManager(_cfg(tmp_path, _inst(tmp_path)))
+    s = mgr.snapshot()
+    assert s["instances"][0]["requests"] == 0
+    assert s["instances"][0]["rss_gb"] == 0.0
+
+
 def test_start_refuses_missing_file(tmp_path):
     mgr = I.InstanceManager(_cfg(tmp_path, _inst(tmp_path, exists=False)))
     ok, msg = mgr.get("m").start()

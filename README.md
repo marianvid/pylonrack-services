@@ -29,9 +29,9 @@ rather than a header. Add as many as the machine has memory for.
   clear; several servers writing at once are unreadable as a single stream
 
 It does *not* download models, browse Hugging Face, or rebuild llama.cpp —
-`pylonrack-llama` already does all three, and duplicating them would mean two
-places to fix the same bug. Starting at login belongs to PylonRack for the
-same reason.
+`pylonrack-llama` already does all three, and a second implementation of each
+would only be a second thing to keep correct. Starting at login belongs to
+PylonRack for the same reason.
 
 ---
 
@@ -86,8 +86,8 @@ open http://127.0.0.1:8768/
 | **8768** | the body panel: HTML over HTTP, live state over WebSocket |
 | **8771–8829** | one per instance, assigned automatically |
 
-`8765` belongs to `pylonrack-llama` and `8767` to `pylonrack-calibrate`, so
-all of them can be loaded at once.
+`8765` belongs to `pylonrack-llama`, `8767` to `pylonrack-calibrate` and
+`8769` to the ParallaxVox slot, so all of them can be loaded at once.
 Change `port` in `rack.json` and `ui_port` in `settings.json` if either clashes
 with something else on your machine.
 
@@ -101,9 +101,16 @@ on add: first free port, host `0.0.0.0`, context 8192, parallel 1, all layers on
 GPU. Deliberately modest — a 128k context reserves memory whether you use it or
 not.
 
-**Edit** — every `llama-server` parameter, in a dialog with Save and Cancel.
-Changes to a running instance take effect after a restart, and the slot says so
-rather than pretending otherwise.
+**Edit** — every modelled `llama-server` parameter, in a dialog with Save and
+Cancel. Save stays disabled until something actually changes. Changes to a
+running instance take effect after a restart, and the slot says so rather than
+pretending otherwise.
+
+**Extra flags** — llama.cpp has dozens of options and modelling every one would
+age badly, so the dialog ends with a free-form field appended verbatim to the
+command line. This is where flags like `--reasoning off`, `--rope-scaling` or
+`--cache-type-k q8_0` go. It is parsed with shell quoting rules, so
+`--chat-template-file "/path/with spaces.jinja"` works as written.
 
 **Start / Stop** — per instance, or all at once. `Start all` goes largest model
 first, so the memory budget is spent on the big models instead of being
@@ -171,7 +178,8 @@ instances.py     the process manager: spawn, readiness, memory guard, states
 uiserver.py      HTTP + WebSocket for the body panel
 server.py        the rack protocol and the shared command layer
 ui/index.html    the body panel itself
-tests/           35 tests, no network and no model loading required
+tests/           43 tests, no network and no model loading required
+docs/            ARCHITECTURE.md — how the pieces fit and why
 ```
 
 The command layer is shared: the header buttons and the page call the same
@@ -202,6 +210,16 @@ about:
   by another instance
 - settings survive a round trip, and unknown keys from a newer version are
   ignored rather than fatal
+- a snapshot carries every editable field, so the edit dialog never invents a
+  value it then saves back
+- a snapshot never reaches the network — the metrics it shows are measured by a
+  background thread, so an unresponsive server cannot stall the interface
+
+Nothing in the suite depends on what happens to be running on the machine: the
+port probe is stubbed by default and covered by a test of its own.
+
+For the reasoning behind the design, see
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
 ---
 

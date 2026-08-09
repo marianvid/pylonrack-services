@@ -371,7 +371,10 @@ class SlotHandler:
         elif t == "shutdown":
             log.info("shutdown requested by rack")
             self.st.save()
-            self.st.mgr.stop_all()
+            # Stopping can take tens of seconds per instance. On the loop that
+            # would freeze every other connection while it happens.
+            await asyncio.get_event_loop().run_in_executor(
+                None, self.st.mgr.stop_all)
 
 
 _handler: SlotHandler | None = None
@@ -424,6 +427,7 @@ def _task_finished(task: "asyncio.Task") -> None:
 
 async def _shutdown(st: AppState) -> None:
     st.save()
+    st.mgr.close()
     await asyncio.get_event_loop().run_in_executor(None, st.mgr.stop_all)
 
 
@@ -457,10 +461,18 @@ async def main() -> None:
     for task in background:
         task.add_done_callback(_task_finished)
 
-    # Bring back whatever was running before the last shutdown.
-    restored = await asyncio.get_event_loop().run_in_executor(None, st.mgr.restore)
-    for iid, ok, msg in restored:
-        log.info("restore %s: %s %s", iid, "ok" if ok else "FAILED", msg)
+    # Bring back whatever was running before the last shutdown — in the
+    # background. Loading a large model takes minutes, and doing it before
+    # the listener opens meant the rack could not connect until it finished.
+    async def _restore():
+        loop = asyncio.get_event_loop()
+        for iid, ok, msg in await loop.run_in_executor(None, st.mgr.restore):
+            log.info("restore %s: %s %s", iid, "ok" if ok else "FAILED", msg)
+        await cmd.broadcast()
+
+    task = asyncio.create_task(_restore(), name="restore")
+    background.add(task)
+    task.add_done_callback(_task_finished)
 
     log.info("services slot on ws://127.0.0.1:%d, ui on :%d",
              port, st.cfg.ui_port)
