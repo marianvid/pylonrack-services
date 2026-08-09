@@ -1,0 +1,23 @@
+{
+  "name": "services",
+  "version": "1.0",
+  "start": "zsh start.sh",
+  "startup_delay": 3,
+  "port": 8767,
+  "heartbeat_interval": 5,
+  "modes": ["instances", "log"],
+  "ui_url": "http://127.0.0.1:8768/",
+  "controls": [
+    { "id": "start_all",    "type": "button", "label": "Start all", "style": "primary",
+      "icon": "play.fill",  "position": "leading",
+      "tooltip": "Start every stopped instance, largest model first" },
+    { "id": "stop_all",     "type": "button", "label": "Stop all",  "style": "default",
+      "icon": "stop.fill",  "position": "leading",
+      "tooltip": "Stop every running instance" },
+    { "id": "status_label", "type": "label",  "value": "Idle",      "style": "default",
+      "position": "leading" },
+    { "id": "node_label",   "type": "label",  "value": "\u2014",   "style": "default",
+      "position": "trailing",
+      "tooltip": "Address the home lab should use to reach this node" }
+  ]
+}

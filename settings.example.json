@@ -1,0 +1,9 @@
+{
+  "llama_bin": "/Volumes/Marian_Backup/git/llama.cpp/build/bin/llama-server",
+  "hf_cache": "/Volumes/Marian_Backup/HF_Cache/hub",
+  "log_dir": "~/.pylonrack/services",
+  "ui_port": 8768,
+  "start_rack_at_login": false,
+  "load_slot_automatically": true,
+  "instances": []
+}
