@@ -75,6 +75,9 @@
   .name a:hover{color:var(--brass);border-bottom-color:var(--brass)}
   .sub{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px}
   .gone{color:var(--dim);text-decoration:line-through}
+  .tag{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:4px;
+    font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim);border:1px solid var(--line);vertical-align:1px}
 
   .pill{display:inline-flex;align-items:center;gap:6px;padding:2.5px 9px 2.5px 7px;
     border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;
@@ -176,7 +179,7 @@
 <div class="scroll">
   <table>
     <thead><tr>
-      <th>Model</th><th>Host</th><th>Port</th><th class="num">Context</th>
+      <th>Model</th><th>Port</th><th class="num">Context</th>
       <th class="num">Parallel</th><th class="num">Memory</th><th>State</th><th></th>
     </tr></thead>
     <tbody id="tb"></tbody>
@@ -282,6 +285,11 @@ function send(action, payload = {}){
 }
 const banner = t => { const b = $("#banner"); b.textContent = t; b.classList.toggle("on", !!t); };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// Only the exception is worth showing. Every instance listens on 0.0.0.0 by
+// default, so a column repeating it says nothing; one that does NOT is worth
+// a mark, because it means the home lab cannot reach it.
+const localTag = r => ["0.0.0.0", "::"].includes(r.host) ? ""
+  : `<span class="tag" title="listens on ${esc(r.host)} — not reachable from the network">local</span>`;
 
 function render(s){
   SNAP = s;
@@ -312,9 +320,8 @@ function render(s){
       ? `<a href="${r.url}" target="_blank" title="Open the built-in chat UI">${esc(r.name)}</a>`
       : esc(r.name);
     return `<tr>
-      <td><div class="name ${gone?"gone":""}">${link}</div>
+      <td><div class="name ${gone?"gone":""}">${link}${localTag(r)}</div>
           <div class="sub">${esc(r.detail || r.model_path.split("/").pop())}</div></td>
-      <td class="num lft">${esc(r.host)}</td>
       <td class="num lft">${r.port}</td>
       <td class="num">${r.ctx_size.toLocaleString("en-US")}</td>
       <td class="num">${r.parallel}</td>

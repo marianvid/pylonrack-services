@@ -15,12 +15,12 @@ table rather than a header.
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Running 2 of 4     Reachable at 192.168.50.50     Memory 24.5 of 120 GB    │
 │  ▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │
-├──────────────────┬───────────┬──────┬─────────┬──────────┬────────┬─────────┤
-│ Qwen3.6-35B-A3B  │ 0.0.0.0   │ 8772 │  32,768 │        4 │ 21.4 GB│ Running │
-│ Gemma-4-26B-A4B  │ 0.0.0.0   │ 8771 │  32,768 │        4 │ 16.8 GB│ Stopped │
-│ Gemma-4-E2B      │ 0.0.0.0   │ 8773 │  16,384 │        8 │  3.1 GB│ Running │
-│ Meta-Llama-3.1-8B│ 127.0.0.1 │ 8774 │   8,192 │        1 │  4.9 GB│ Missing │
-└──────────────────┴───────────┴──────┴─────────┴──────────┴────────┴─────────┘
+├────────────────────────┬──────┬─────────┬──────────┬─────────┬─────────────┤
+│ Qwen3.6-35B-A3B        │ 8772 │  32,768 │        4 │ 21.4 GB │ Running     │
+│ Gemma-4-26B-A4B        │ 8771 │  32,768 │        4 │ 16.8 GB │ Stopped     │
+│ Gemma-4-E2B            │ 8773 │  16,384 │        8 │  3.1 GB │ Running     │
+│ Meta-Llama-3.1-8B LOCAL│ 8774 │   8,192 │        1 │  4.9 GB │ Missing     │
+└────────────────────────┴──────┴─────────┴──────────┴─────────┴─────────────┘
 ```
 
 ---
@@ -34,7 +34,9 @@ table rather than a header.
 - **A model deleted from disk** becomes `Missing`, not an error, and the
   configuration is kept so the instance recovers if the file returns
 - **Reachable from the network** — instances bind `0.0.0.0` by default, and the
-  header shows the address other machines should actually use
+  header shows the address other machines should actually use. An instance set
+  to `127.0.0.1` is marked `LOCAL` in the table; the default is not marked,
+  because a column repeating the same value on every row says nothing
 - **Per-instance logs**, merged in the Log panel or filtered to one model
 - **Start PylonRack at login**, so the node is up without anyone opening
   anything
