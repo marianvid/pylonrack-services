@@ -168,9 +168,18 @@
   .f{min-width:0}
   .f label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--dim);font-weight:650;margin-bottom:5px}
-  .f input,.f select{width:100%;font-family:var(--mono);font-size:12.5px;padding:6px 8px;
-    border-radius:6px;background:var(--sunk);border:1px solid var(--line);
-    color:var(--text);font-variant-numeric:tabular-nums}
+  .f input,.f select{width:100%;font-family:var(--mono);font-size:12.5px;
+    height:31px;padding:0 9px;line-height:29px;border-radius:6px;
+    background:var(--sunk);border:1px solid var(--line);color:var(--text);
+    font-variant-numeric:tabular-nums}
+  /* macOS draws its own select. Turning that off is the only way to get the
+     same height and the same flat surface as the text boxes beside it. */
+  .f select{-webkit-appearance:none;appearance:none;padding-right:26px;cursor:pointer}
+  .f.sel{position:relative}
+  .f.sel::after{content:"";position:absolute;right:11px;bottom:13px;
+    width:9px;height:6px;pointer-events:none;background-color:var(--dim);
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23000' stroke-width='1.7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23000' stroke-width='1.7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain}
   .f input:focus,.f select:focus{outline:2px solid var(--brass);outline-offset:1px}
   .f.key input,.f.key select{color:var(--brass);font-weight:640}
   .f.wide{grid-column:1/-1}
@@ -413,7 +422,7 @@ function openEdit(id){
     const v = r[k];
     const missing = v === undefined;
     if (kind === "bool")
-      return `<div class="f"><label>${label}</label>
+      return `<div class="f sel"><label>${label}</label>
         <select name="${k}" ${missing ? "disabled" : ""}>
           <option value="1" ${v === true ? "selected" : ""}>on</option>
           <option value="0" ${v === false ? "selected" : ""}>off</option>
