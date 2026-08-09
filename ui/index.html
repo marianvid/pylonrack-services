@@ -173,6 +173,7 @@
     color:var(--text);font-variant-numeric:tabular-nums}
   .f input:focus,.f select:focus{outline:2px solid var(--brass);outline-offset:1px}
   .f.key input,.f.key select{color:var(--brass);font-weight:640}
+  .f.wide{grid-column:1/-1}
   .grp{grid-column:1/-1;font-size:10px;letter-spacing:.09em;text-transform:uppercase;
     color:var(--dim);font-weight:650;border-top:1px solid var(--line-soft);
     padding-top:11px;margin-top:2px}
@@ -390,8 +391,9 @@ const FLD = [
   ["threads","Threads","num"],["n_gpu_layers","GPU layers","num"],
   ["batch_size","Batch","num"],["ubatch_size","Micro-batch","num"],
   ["flash_attn","Flash attention","bool"],["mlock","mlock","bool"],
-  ["api_key","API key","text"],["draft_model_path","Draft model path","text"],
-  ["extra_args","Extra llama-server flags","text"],
+  ["api_key","API key","text"],
+  ["draft_model_path","Draft model path","text",0,1],
+  ["extra_args","Extra llama-server flags","text",0,1],
   ["grp","Sampling"],
   ["temperature","Temperature","text"],["top_p","top_p","text"],
   ["top_k","top_k","num"],["repeat_penalty","Repeat penalty","text"],
@@ -406,7 +408,7 @@ function openEdit(id){
   // The row is the whole record, so the dialog is built straight from it.
   // A field the server does not send is shown disabled rather than blank:
   // an empty box that saves as a real value is how settings get clobbered.
-  $("#edFields").innerHTML = FLD.map(([k, label, kind, key]) => {
+  $("#edFields").innerHTML = FLD.map(([k, label, kind, key, wide]) => {
     if (k === "grp") return `<div class="grp">${label}</div>`;
     const v = r[k];
     const missing = v === undefined;
@@ -416,9 +418,13 @@ function openEdit(id){
           <option value="1" ${v === true ? "selected" : ""}>on</option>
           <option value="0" ${v === false ? "selected" : ""}>off</option>
         </select></div>`;
-    return `<div class="f ${key ? "key" : ""}"><label>${label}</label>
+    return `<div class="f ${key ? "key" : ""} ${wide ? "wide" : ""}">
+      <label>${label}</label>
       <input name="${k}" value="${esc(missing ? "" : v)}"
-        ${missing ? "disabled" : ""}></div>`;
+        ${missing ? "disabled" : ""}
+        ${k === "extra_args" ? 'placeholder="e.g. --reasoning off --no-warmup"' : ""}
+        ${k === "draft_model_path" ? 'placeholder="optional, a small model to draft with"' : ""}
+      ></div>`;
   }).join("");
 
   // Remember what was on screen when the dialog opened, so Save can stay off
