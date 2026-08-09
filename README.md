@@ -25,7 +25,8 @@ rather than a header. Add as many as the machine has memory for.
   header shows the address other machines should actually use. An instance set
   to `127.0.0.1` is marked `LOCAL` in the table; the default is not marked,
   because a column repeating the same value on every row says nothing
-- **Per-instance logs**, merged in the Log panel or filtered to one model
+- **Per-instance logs** — merged, or filtered to one model, with pause and
+  clear; several servers writing at once are unreadable as a single stream
 - **Start PylonRack at login**, so the node is up without anyone opening
   anything
 
@@ -123,9 +124,12 @@ installed RAM − 8 GB reserved for the system
 ```
 
 The sum uses the *model file size*, not resident memory: RSS lags during load,
-and the guard has to answer before the memory is actually taken. It is a rough
-figure, deliberately conservative. Overriding it is not offered — the failure
-mode it prevents is a machine that stops responding.
+and the guard has to answer before the memory is actually taken.
+
+It therefore counts **model weights only**. The KV cache — which grows with
+context and parallel slots — is on top, and can be several gigabytes per
+instance at a large context. Leave room accordingly. Overriding the guard is
+not offered: the failure mode it prevents is a machine that stops responding.
 
 ---
 

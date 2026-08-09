@@ -69,6 +69,30 @@ def test_command_contains_every_parameter(tmp_path):
         assert frag in cmd, frag
 
 
+def test_extra_args_are_appended(tmp_path):
+    inst = _inst(tmp_path)
+    inst.extra_args = "--reasoning off --no-warmup"
+    mgr = I.InstanceManager(_cfg(tmp_path, inst))
+    cmd = mgr.get("m").build_command()
+    assert cmd[-4:] == ["--reasoning", "off", "--no-warmup"][-4:] or \
+        " ".join(cmd).endswith("--reasoning off --no-warmup")
+
+
+def test_extra_args_respect_quoting(tmp_path):
+    inst = _inst(tmp_path)
+    inst.extra_args = '--chat-template "a b"'
+    mgr = I.InstanceManager(_cfg(tmp_path, inst))
+    assert "a b" in mgr.get("m").build_command()
+
+
+def test_empty_extra_args_add_nothing(tmp_path):
+    a = _inst(tmp_path, "a", 8771)
+    mgr = I.InstanceManager(_cfg(tmp_path, a))
+    base = len(mgr.get("a").build_command())
+    a.extra_args = "   "
+    assert len(mgr.get("a").build_command()) == base
+
+
 def test_no_api_key_flag_when_empty(tmp_path):
     mgr = I.InstanceManager(_cfg(tmp_path, _inst(tmp_path)))
     assert "--api-key" not in " ".join(mgr.get("m").build_command())

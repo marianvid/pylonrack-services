@@ -5,7 +5,7 @@
   "startup_delay": 3,
   "port": 8766,
   "heartbeat_interval": 5,
-  "modes": ["instances", "log"],
+  "modes": ["instances"],
   "ui_url": "http://127.0.0.1:8768/",
   "controls": [
     { "id": "start_all",    "type": "button", "label": "Start all", "style": "primary",

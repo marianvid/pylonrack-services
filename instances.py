@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shlex
 import shutil
 import signal
 import subprocess
@@ -139,6 +140,10 @@ class ManagedInstance:
             cmd += ["--api-key", i.api_key]
         if i.draft_model_path and Path(i.draft_model_path).exists():
             cmd += ["--model-draft", i.draft_model_path]
+        # Escape hatch for the flags this slot does not model. llama.cpp has
+        # dozens; modelling every one would age badly.
+        if i.extra_args.strip():
+            cmd += shlex.split(i.extra_args)
         return cmd
 
     def start(self) -> tuple[bool, str]:
@@ -349,6 +354,7 @@ class InstanceManager:
                 "ctx_size": i.ctx_size,
                 "parallel": i.parallel,
                 "size_gb": i.size_gb,
+                "extra_args": i.extra_args,
                 "state": m.state,
                 "detail": m.detail,
                 "pid": m.pid,

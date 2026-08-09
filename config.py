@@ -48,6 +48,7 @@ class Instance:
     repeat_penalty: float = 1.1
     api_key: str = ""
     draft_model_path: str = ""
+    extra_args: str = ""      # anything llama-server accepts that is not modelled
     size_gb: float = 0.0
     was_running: bool = False
 

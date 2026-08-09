@@ -12,8 +12,9 @@ Header controls (declared here, rendered natively by the rack):
   status_label          label
   node_label            label — where the home lab should connect
 
-Body modes: instances (the table) and log. No models or settings modes; both
-live inside the body, where a table and a modal dialog belong.
+The body is a single panel with its own two views, Instances and Log. The
+rack's generic log panel shows one undivided stream; with several servers
+running, the only useful log is one you can filter, so it lives here.
 """
 
 from __future__ import annotations
@@ -104,7 +105,7 @@ def _manifest(st: AppState) -> dict:
         "name": "services",
         "version": "1.0",
         "heartbeat_interval": 5,
-        "modes": ["instances", "log"],
+        "modes": ["instances"],
         "ui_url": f"http://127.0.0.1:{st.cfg.ui_port}/",
         "controls": _controls(st),
     }

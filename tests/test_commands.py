@@ -135,11 +135,27 @@ def test_status_text_reflects_state(tmp_path, monkeypatch):
     assert S._status_text(st) == "Starting…"
 
 
-def test_manifest_declares_two_modes(tmp_path, monkeypatch):
+def test_manifest_declares_one_mode(tmp_path, monkeypatch):
+    """The log lives inside the body, where it can be filtered per instance,
+    so the rack only needs to show the one panel."""
     st = _state(tmp_path, monkeypatch)
     m = S._manifest(st)
-    assert m["modes"] == ["instances", "log"]
+    assert m["modes"] == ["instances"]
     assert m["ui_url"].endswith(f":{st.cfg.ui_port}/")
+
+
+def test_log_merged_tags_each_line(tmp_path, monkeypatch):
+    st = _state(tmp_path, monkeypatch, _model(tmp_path, "alpha"))
+    st.cfg.log_file_for("alpha").write_text("one\ntwo\n", encoding="utf-8")
+    r = run(S.Commands(st).run("log", {}))
+    assert r["ok"] and all(l.startswith("alpha") for l in r["lines"])
+
+
+def test_log_single_instance_is_untagged(tmp_path, monkeypatch):
+    st = _state(tmp_path, monkeypatch, _model(tmp_path, "alpha"))
+    st.cfg.log_file_for("alpha").write_text("one\ntwo\n", encoding="utf-8")
+    r = run(S.Commands(st).run("log", {"id": "alpha"}))
+    assert r["lines"] == ["one", "two"]
 
 
 def test_manifest_controls_present(tmp_path, monkeypatch):
