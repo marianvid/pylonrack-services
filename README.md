@@ -5,23 +5,11 @@ Mac into an inference node the rest of the network can use.
 
 The [`pylonrack-llama`](https://github.com/marianvid/pylonrack-llama) slot is
 built around one model at a time: pick it from a dropdown, start it, chat with
-it. This slot answers a different question — *keep these three models up, on
-these ports, and bring them back after a reboot* — so the controls live in a
-table rather than a header.
+it. This slot answers a different question — *keep these models up, on these
+ports, and bring them back after a reboot* — so the controls live in a table
+rather than a header. Add as many as the machine has memory for.
 
-```
-┌─ services ─────────────────────────── Start all · Stop all · 192.168.50.50 ─┐
-│ Instances │ Log                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Running 2 of 4     Reachable at 192.168.50.50     Memory 24.5 of 120 GB    │
-│  ▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │
-├────────────────────────┬──────┬─────────┬──────────┬─────────┬─────────────┤
-│ Qwen3.6-35B-A3B        │ 8772 │  32,768 │        4 │ 21.4 GB │ Running     │
-│ Gemma-4-26B-A4B        │ 8771 │  32,768 │        4 │ 16.8 GB │ Stopped     │
-│ Gemma-4-E2B            │ 8773 │  16,384 │        8 │  3.1 GB │ Running     │
-│ Meta-Llama-3.1-8B LOCAL│ 8774 │   8,192 │        1 │  4.9 GB │ Missing     │
-└────────────────────────┴──────┴─────────┴──────────┴─────────┴─────────────┘
-```
+![The services slot in PylonRack](docs/images/services-instances.png)
 
 ---
 
@@ -212,23 +200,6 @@ about:
   by another instance
 - settings survive a round trip, and unknown keys from a newer version are
   ignored rather than fatal
-
----
-
-## Two bugs worth writing down
-
-**Discarded tasks get collected.** `asyncio.create_task()` returns a task the
-loop holds only weakly. Without keeping the reference, the UI server was garbage
-collected after serving its first page — the slot kept running, the body panel
-simply stopped existing, and nothing said why. Background tasks are now held in
-a set and report if they end.
-
-**`connection.respond()` already sets its headers.** Setting `Content-Type` and
-`Content-Length` again appends duplicates rather than replacing them, and the
-client hangs on the malformed response. `uiserver.py` builds the `Response` by
-hand.
-
-Both were silent failures: something stopped working and nothing said so.
 
 ---
 
