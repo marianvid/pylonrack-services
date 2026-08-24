@@ -1,5 +1,10 @@
 # pylonrack-services
 
+> [!NOTE]
+> **Archived:** this project is no longer actively maintained and remains public
+> for reference. Active local-inference development continues in
+> [ai-lab](https://github.com/marianvid/ai-lab).
+
 PylonRack slot that runs several **llama.cpp** servers side by side and turns a
 Mac into an inference node the rest of the network can use.
 
